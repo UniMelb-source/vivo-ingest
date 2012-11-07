@@ -32,7 +32,7 @@ public class VivoIngest {
         if (cmd.hasOption("h")) {
             consoleHelp();
         }
-        if (!cmd.hasOption("dropTables")) {
+        if (!cmd.hasOption("dropTables") && !cmd.hasOption("fileName")) {
             System.out.println("Missing required option: fileName");
             consoleHelp();
         }
