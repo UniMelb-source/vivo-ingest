@@ -1,67 +1,98 @@
 package au.edu.unimelb.rdr;
 
-import com.hp.hpl.jena.sdb.Store;
 import au.edu.unimelb.rdr.database.DatabaseConnection;
 import au.edu.unimelb.rdr.database.SDBDatabaseConnection;
-import java.io.PrintStream;
+import com.hp.hpl.jena.sdb.Store;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.Statement;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 public class VivoIngest {
 
-    public static void main(String[] args)
-            throws Exception {
-        String jenaType = "SDB";
-        String dbType = "MySQL";
-        String modelName = "http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
-
-        String password = "";
-        String dbString = "";
-        String fileName = "";
-        String userName = "";
-        String addData = "";
-
-        Boolean dropTables = Boolean.valueOf(false);
-        Boolean addRDF = Boolean.valueOf(true);
-
-        int i = 0;
-
-        for (String s : args) {
-            if (s.equalsIgnoreCase("-jenaType")) {
-                jenaType = args[(i + 1)];
-            } else if (s.equalsIgnoreCase("-userName")) {
-                userName = args[(i + 1)];
-            } else if (s.equalsIgnoreCase("-password")) {
-                password = args[(i + 1)];
-            } else if (s.equalsIgnoreCase("-dbType")) {
-                dbType = args[(i + 1)];
-            } else if (s.equalsIgnoreCase("-dbString")) {
-                dbString = args[(i + 1)];
-                dbString = StringUtils.strip(dbString, "\"");
-            } else if (s.equalsIgnoreCase("-fileName")) {
-                fileName = args[(i + 1)];
-            } else if (s.equalsIgnoreCase("-addData")) {
-                addData = args[(i + 1)];
-                addRDF = Boolean.valueOf(Boolean.parseBoolean(addData));
-            } else if (s.equalsIgnoreCase("-modelName")) {
-                modelName = args[(i + 1)];
-            } else if (s.equalsIgnoreCase("-dropTables")) {
-                dropTables = Boolean.valueOf(true);
-            } else if (s.equalsIgnoreCase("-h")) {
-                consoleHelp();
-            }
-
-            i++;
+    private static CommandLine parseOptions(String[] args) throws ParseException {
+        Options options = new Options();
+        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Database user name").create("userName"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Database password").create("password"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Database string").create("dbString"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("TTL filename").create("fileName"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("JENA type").create("jenaType"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Database type").create("dbType"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Add data?").create("addData"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Model name").create("modelName"));
+        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Drop tables?").create("dropTables"));
+        options.addOption(OptionBuilder.hasArg(false).isRequired(false).withDescription("Show help").create("h"));
+        CommandLineParser parser = new BasicParser();
+        CommandLine cmd = parser.parse(options, args);
+        if (cmd.hasOption("h")) {
+            consoleHelp();
         }
-        if (dropTables.booleanValue()) {
-            if ((userName.equalsIgnoreCase("")) || (password.equalsIgnoreCase("")) || (dbString.equalsIgnoreCase(""))) {
-                System.out.println("Login credentials and dbString are required for the drop tables command.\n");
-                consoleHelp();
-                System.exit(0);
-            }
+        if (!cmd.hasOption("dropTables")) {
+            System.out.println("Missing required option: fileName");
+            consoleHelp();
+        }
+        return cmd;
+    }
 
+    public static void main(String[] args) throws Exception {
+        CommandLine cmd = null;
+        try {
+            cmd = parseOptions(args);
+        } catch (ParseException pe) {
+            System.out.println(pe.getMessage());
+            consoleHelp();
+        }
+
+        String jenaType = null;
+        String dbType = null;
+
+        Boolean addData = null;
+
+        String modelName = null;
+
+        Boolean dropTables = null;
+
+        if (cmd.hasOption("jenaType")) {
+            jenaType = cmd.getOptionValue("jenaType");
+        } else {
+            jenaType = "SDB";
+        }
+
+        if (cmd.hasOption("dbType")) {
+            dbType = cmd.getOptionValue("dbType");
+        } else {
+            dbType = "MySQL";
+        }
+
+        if (cmd.hasOption("addData")) {
+            addData = Boolean.parseBoolean(cmd.getOptionValue("addData"));
+        } else {
+            addData = Boolean.TRUE;
+        }
+
+        if (cmd.hasOption("modelName")) {
+            modelName = cmd.getOptionValue("modelName");
+        } else {
+            modelName = "http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
+        }
+
+        if (cmd.hasOption("dropTables")) {
+            dropTables = Boolean.parseBoolean(cmd.getOptionValue("dropTables"));
+        } else {
+            dropTables = Boolean.FALSE;
+        }
+
+        String password = cmd.getOptionValue("password");
+        String dbString = cmd.getOptionValue("dbString");
+        String fileName = cmd.getOptionValue("fileName");
+        String userName = cmd.getOptionValue("userName");
+
+        if (dropTables) {
             Connection conn = null;
 
             if (jenaType.equalsIgnoreCase("SDB")) {
@@ -85,19 +116,19 @@ public class VivoIngest {
             }
 
         } else {
-            if ((userName.equalsIgnoreCase("")) || (password.equalsIgnoreCase("")) || (dbString.equalsIgnoreCase(""))) {
-                System.out.println("This program needs a user name, a password, a database string, and a filename to run.\n");
-                consoleHelp();
-                System.exit(0);
-            }
-            RDFController rdfC;
+            RDFController controller;
             if (jenaType.equals("SDB")) {
                 SDBDatabaseConnection sdc = new SDBDatabaseConnection(userName, password, dbString, dbType);
                 Store store = sdc.getStore();
-                rdfC = new RDFController(store, fileName, modelName, addRDF);
+                controller = new RDFController(store, modelName);
             } else {
                 DatabaseConnection dbc = new DatabaseConnection(userName, password, dbString, dbType);
-                rdfC = new RDFController(dbc.maker, fileName, modelName, addRDF);
+                controller = new RDFController(dbc.maker, modelName);
+            }
+            if (addData) {
+                controller.add(fileName);
+            } else {
+                controller.remove(fileName);
             }
         }
     }
@@ -120,7 +151,6 @@ public class VivoIngest {
         System.out.println("\t-addData true/false");
         System.out.println("\t-modelName MODEL1");
         System.out.println("\t-dropTables");
-        System.out.println("\t-h - Display this help menu\n");
         System.exit(0);
     }
 }
