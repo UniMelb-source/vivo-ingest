@@ -8,7 +8,6 @@ import com.hp.hpl.jena.sdb.Store;
 import com.hp.hpl.jena.util.FileManager;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 public class RDFController {
@@ -40,23 +39,29 @@ public class RDFController {
         InputStream inputStream = fileManager.open(fileName);
         printStream.println("Adding RDF to database...");
         long startTime = System.currentTimeMillis();
+        long startSize = model.size();
         model.read(inputStream, "", "N-TRIPLE");
         inputStream.close();
         long endTime = System.currentTimeMillis();
+        long endSize = model.size();
         long duration = endTime - startTime;
-        printStream.println("Action completed [" + duration + "ms]");
+        long sizeDelta = endSize - startSize;
+        printStream.println("Action completed [" + duration + "ms, " + sizeDelta + " records]");
     }
 
     public void remove(String fileName) throws IOException {
         InputStream inputStream = fileManager.open(fileName);
         printStream.println("Removing RDF from database...");
         long startTime = System.currentTimeMillis();
+        long startSize = model.size();
         Model removeModel = ModelFactory.createDefaultModel();
         removeModel.read(inputStream, "", "N-TRIPLE");
         model.remove(removeModel);
         inputStream.close();
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
-        printStream.println("Action completed [" + duration + "ms]");
+        long endSize = model.size();
+        long sizeDelta = endSize - startSize;
+        printStream.println("Action completed [" + duration + "ms, " + sizeDelta + " records]");
     }
 }
