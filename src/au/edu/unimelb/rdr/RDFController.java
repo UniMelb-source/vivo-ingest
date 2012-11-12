@@ -9,12 +9,15 @@ import com.hp.hpl.jena.util.FileManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class RDFController {
 
     private Model model;
     private FileManager fileManager;
     private PrintStream printStream;
+    private Log log = LogFactory.getLog(RDFController.class);
 
     public RDFController(Store store, String modelName) {
         this(store, modelName, System.out);
@@ -37,7 +40,7 @@ public class RDFController {
 
     public void add(String fileName) throws IOException {
         InputStream inputStream = fileManager.open(fileName);
-        printStream.println("Adding RDF to database...");
+        log("Adding RDF to database...");
         long startTime = System.currentTimeMillis();
         long startSize = model.size();
         model.read(inputStream, "", "N-TRIPLE");
@@ -46,12 +49,12 @@ public class RDFController {
         long endSize = model.size();
         long duration = endTime - startTime;
         long sizeDelta = endSize - startSize;
-        printStream.println("Action completed [" + duration + "ms, " + sizeDelta + " records]");
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
     }
 
     public void remove(String fileName) throws IOException {
         InputStream inputStream = fileManager.open(fileName);
-        printStream.println("Removing RDF from database...");
+        log("Removing RDF from database...");
         long startTime = System.currentTimeMillis();
         long startSize = model.size();
         Model removeModel = ModelFactory.createDefaultModel();
@@ -62,6 +65,11 @@ public class RDFController {
         long duration = endTime - startTime;
         long endSize = model.size();
         long sizeDelta = endSize - startSize;
-        printStream.println("Action completed [" + duration + "ms, " + sizeDelta + " records]");
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
+    }
+    
+    private void log(String output) {
+        printStream.println(output);
+        log.info(output);
     }
 }
