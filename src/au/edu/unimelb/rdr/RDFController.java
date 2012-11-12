@@ -39,18 +39,24 @@ public class RDFController {
     public void add(String fileName) throws IOException {
         InputStream inputStream = fileManager.open(fileName);
         printStream.println("Adding RDF to database...");
+        long startTime = System.currentTimeMillis();
         model.read(inputStream, "", "N-TRIPLE");
         inputStream.close();
-        printStream.println("Action completed.");
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        printStream.println("Action completed [" + duration + "ms]");
     }
 
     public void remove(String fileName) throws IOException {
         InputStream inputStream = fileManager.open(fileName);
         printStream.println("Removing RDF from database...");
+        long startTime = System.currentTimeMillis();
         Model removeModel = ModelFactory.createDefaultModel();
         removeModel.read(inputStream, "", "N-TRIPLE");
         model.remove(removeModel);
         inputStream.close();
-        printStream.println("Action completed.");
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        printStream.println("Action completed [" + duration + "ms]");
     }
 }
