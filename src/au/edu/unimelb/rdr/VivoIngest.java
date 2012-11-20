@@ -17,6 +17,8 @@ import java.util.Iterator;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -27,34 +29,38 @@ public class VivoIngest {
 
     private static Log log = LogFactory.getLog(RDFController.class);
 
-    private static CommandLine parseOptions(String[] args) throws ParseException {
-        Options options = new Options();
-        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Database user name").create("userName"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Database password").create("password"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Database string").create("dbString"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Remote model name").create("remoteModelName"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(true).withDescription("Local model name").create("localModelName"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Add filename").create("addFileName"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Delete filename").create("delFileName"));
-        options.addOption(OptionBuilder.hasArg(true).isRequired(false).withDescription("Database type").create("dbType"));
+    private static CommandLine parseOptions(String[] args) {
+        Options options;
+        CommandLineParser parser;
+        CommandLine cmd = null;
+
+        options = new Options();
+        options.addOption(OptionBuilder.withArgName("database-user-name").hasArg().isRequired(true).withDescription("Database user name").create("userName"));
+        options.addOption(OptionBuilder.withArgName("database-password").hasArg().isRequired(true).withDescription("Database password").create("password"));
+        options.addOption(OptionBuilder.withArgName("database-connection-string").hasArg().isRequired(true).withDescription("Database string").create("dbString"));
+        options.addOption(OptionBuilder.withArgName("remote-model").hasArg().isRequired(true).withDescription("Remote model name").create("remoteModelName"));
+        options.addOption(OptionBuilder.withArgName("local-model").hasArg().isRequired(true).withDescription("Local model name").create("localModelName"));
+        options.addOption(OptionBuilder.withArgName("jena-database-type").hasArg().isRequired(true).withDescription("JENA database type").create("jenaType"));
+        options.addOption(OptionBuilder.withArgName("add-delta-ttl").hasArg().isRequired(false).withDescription("Add filename").create("addFileName"));
+        options.addOption(OptionBuilder.withArgName("delete-delta-ttl").hasArg().isRequired(false).withDescription("Delete filename").create("delFileName"));
+        options.addOption(OptionBuilder.withArgName("database-type").hasArg().isRequired(false).withDescription("Database type").create("dbType"));
         options.addOption(OptionBuilder.hasArg(false).isRequired(false).withDescription("Show help").create("h"));
-        CommandLineParser parser = new BasicParser();
-        CommandLine cmd = parser.parse(options, args);
-        if (cmd.hasOption("h")) {
-            consoleHelp();
+        parser = new BasicParser();
+        try {
+            cmd = parser.parse(options, args);
+            if (cmd.hasOption("h")) {
+                consoleHelp(options);
+            }
+
+        } catch (ParseException pe) {
+            consoleHelp(options);
         }
         return cmd;
     }
 
     public static void main(String[] args) throws IOException {
         CommandLine cmd = null;
-        try {
-            cmd = parseOptions(args);
-        } catch (ParseException pe) {
-            System.out.println(pe.getMessage());
-            consoleHelp();
-            return;
-        }
+        cmd = parseOptions(args);
 
         String dbType = null;
 
@@ -71,11 +77,17 @@ public class VivoIngest {
         String addFileName = cmd.getOptionValue("addFileName");
         String delFileName = cmd.getOptionValue("delFileName");
         String userName = cmd.getOptionValue("userName");
+        String jenaType = cmd.getOptionValue("jenaType");
 
         RDFController controller;
-        SDBDatabaseConnection sdc = new SDBDatabaseConnection(userName, password, dbString, dbType);
-        Store store = sdc.getStore();
-        controller = new RDFController(store, remoteModelName, localModelName);
+        if (jenaType.equals("SDB")) {
+            SDBDatabaseConnection sdc = new SDBDatabaseConnection(userName, password, dbString, dbType);
+            Store store = sdc.getStore();
+            controller = new RDFController(store, remoteModelName, localModelName);
+        } else {
+            DatabaseConnection dbc = new DatabaseConnection(userName, password, dbString, dbType);
+            controller = new RDFController(dbc.maker, remoteModelName, localModelName);
+        }
         controller.process(addFileName, delFileName);
         controller.close();
     }
@@ -187,20 +199,11 @@ public class VivoIngest {
      }
      }
      }*/
-    private static void consoleHelp() {
-        System.out.print("Correct usage of this application: ");
-        System.out.println("java -jar VivoIngest.jar <flags>\n");
-        System.out.println("If a database type isn't chosen, this program will use MySQL as the default.");
-        System.out.println("\n\tFlags:");
-        System.out.println("\n\t-userName johnDoe");
-        System.out.println("\t-password secret123");
-        System.out.println("\t-dbString jdbc:mysql://localhost/vivo");
-        System.out.println("\t-dbType MySQL/Oracle");
-        System.out.println("\t-addFileName add.ttl");
-        System.out.println("\t-addFileName del.ttl");
-        System.out.println("\t-remoteModelName remote-model");
-        System.out.println("\t-localModelName local-model");
-        System.exit(0);
+    private static void consoleHelp(Options options) {
+        HelpFormatter formatter = new HelpFormatter();
+        
+        formatter.printHelp("java -jar VivoIngest.jar", options);
+        System.exit(1);
     }
 
     private static void info(String output) {
