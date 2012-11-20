@@ -2,23 +2,12 @@ package au.edu.unimelb.rdr;
 
 import au.edu.unimelb.rdr.database.DatabaseConnection;
 import au.edu.unimelb.rdr.database.SDBDatabaseConnection;
-import com.hp.hpl.jena.ontology.impl.OntModelImpl;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.sdb.SDBFactory;
 import com.hp.hpl.jena.sdb.Store;
 import java.io.IOException;
-import java.util.Iterator;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
@@ -60,6 +49,8 @@ public class VivoIngest {
 
     public static void main(String[] args) throws IOException {
         CommandLine cmd = null;
+        SDBDatabaseConnection sdbConnection = null;
+        DatabaseConnection rdbConnection = null;
         cmd = parseOptions(args);
 
         String dbType = null;
@@ -81,127 +72,26 @@ public class VivoIngest {
 
         RDFController controller;
         if (jenaType.equals("SDB")) {
-            SDBDatabaseConnection sdc = new SDBDatabaseConnection(userName, password, dbString, dbType);
-            Store store = sdc.getStore();
+            sdbConnection = new SDBDatabaseConnection(userName, password, dbString, dbType);
+            Store store = sdbConnection.getStore();
             controller = new RDFController(store, remoteModelName, localModelName);
         } else {
-            DatabaseConnection dbc = new DatabaseConnection(userName, password, dbString, dbType);
-            controller = new RDFController(dbc.maker, remoteModelName, localModelName);
+            rdbConnection = new DatabaseConnection(userName, password, dbString, dbType);
+            controller = new RDFController(rdbConnection.maker, remoteModelName, localModelName);
         }
         controller.process(addFileName, delFileName);
         controller.close();
+        if (sdbConnection != null) {
+            sdbConnection.closeDatabaseConnection();
+        }
+        if (rdbConnection != null) {
+            rdbConnection.closeDatabaseConnection();
+        }
     }
 
-    /*public static void main(String[] args) {
-     CommandLine cmd = null;
-     try {
-     cmd = parseOptions(args);
-     } catch (ParseException pe) {
-     System.out.println(pe.getMessage());
-     consoleHelp();
-     }
-
-     String jenaType = null;
-     String dbType = null;
-
-     Boolean addData = null;
-
-     String modelName = null;
-
-     Boolean dropTables = null;
-
-     if (cmd.hasOption("jenaType")) {
-     jenaType = cmd.getOptionValue("jenaType");
-     } else {
-     jenaType = "SDB";
-     }
-
-     if (cmd.hasOption("dbType")) {
-     dbType = cmd.getOptionValue("dbType");
-     } else {
-     dbType = "MySQL";
-     }
-
-     if (cmd.hasOption("addData")) {
-     addData = Boolean.parseBoolean(cmd.getOptionValue("addData"));
-     } else {
-     addData = Boolean.TRUE;
-     }
-
-     if (cmd.hasOption("modelName")) {
-     modelName = cmd.getOptionValue("modelName");
-     } else {
-     modelName = "http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
-     }
-
-     if (cmd.hasOption("dropTables")) {
-     dropTables = Boolean.parseBoolean(cmd.getOptionValue("dropTables"));
-     } else {
-     dropTables = Boolean.FALSE;
-     }
-
-     String password = cmd.getOptionValue("password");
-     String dbString = cmd.getOptionValue("dbString");
-     String fileName = cmd.getOptionValue("fileName");
-     String userName = cmd.getOptionValue("userName");
-
-     if (dropTables) {
-     Connection conn = null;
-
-     if (jenaType.equalsIgnoreCase("SDB")) {
-     SDBDatabaseConnection sdc = new SDBDatabaseConnection(userName, password, dbString, dbType);
-     conn = sdc.getConnection();
-     } else {
-     DatabaseConnection dbc = new DatabaseConnection(userName, password, dbString, dbType);
-     try {
-     conn = dbc.getConnection();
-     } catch (SQLException sqle) {
-     error("Cannot create database connection: " + sqle.toString());
-     return;
-     }
-     }
-     try {
-     if (dbType.equalsIgnoreCase("Oracle")) {
-     String query = "BEGIN FOR i IN (SELECT table_name FROM user_tables) LOOP EXECUTE IMMEDIATE('DROP TABLE ' || user || '.' || i.table_name || ' CASCADE CONSTRAINTS'); END LOOP; END;";
-
-     CallableStatement callStmt = conn.prepareCall(query);
-     callStmt.execute();
-     } else {
-     String query = "SELECT CONCAT( \"DROP TABLE \",GROUP_CONCAT(TABLE_NAME)) AS stmt FROM information_schema.TABLES";
-
-     Statement statement = conn.createStatement();
-     statement.executeQuery(query);
-     }
-     } catch (SQLException sqle) {
-     error("Cannot drop tables: " + sqle.toString());
-     return;
-     }
-
-     } else {
-     RDFController controller;
-     if (jenaType.equals("SDB")) {
-     SDBDatabaseConnection sdc = new SDBDatabaseConnection(userName, password, dbString, dbType);
-     Store store = sdc.getStore();
-     controller = new RDFController(store, modelName);
-     } else {
-     DatabaseConnection dbc = new DatabaseConnection(userName, password, dbString, dbType);
-     controller = new RDFController(dbc.maker, modelName);
-     }
-     try {
-     if (addData) {
-     controller.add(fileName);
-     } else {
-     controller.remove(fileName);
-     }
-     } catch (IOException ioe) {
-     error("Can't perform RDF operation: " + ioe.getMessage());
-     return;
-     }
-     }
-     }*/
     private static void consoleHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        
+
         formatter.printHelp("java -jar VivoIngest.jar", options);
         System.exit(1);
     }
