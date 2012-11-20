@@ -13,6 +13,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.sdb.SDBFactory;
 import com.hp.hpl.jena.sdb.Store;
 import com.hp.hpl.jena.util.FileManager;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -26,6 +27,8 @@ public class RDFController {
 
     private Model remoteModel;
     private Model localModel;
+    private String remoteModelName;
+    private String localModelName;
     private FileManager fileManager;
     private PrintStream printStream;
     private Log log = LogFactory.getLog(RDFController.class);
@@ -42,125 +45,158 @@ public class RDFController {
 
     public RDFController(Store store, ModelMaker modelMaker, String remoteModelName, String localModelName, PrintStream printStream) {
         if (store != null) {
-            this.remoteModel = SDBFactory.connectNamedModel(store, remoteModelName);
-            this.localModel = SDBFactory.connectNamedModel(store, localModelName);
+            if (remoteModelName != null) {
+                this.remoteModelName = remoteModelName;
+                this.remoteModel = SDBFactory.connectNamedModel(store, remoteModelName);
+            }
+            if (localModelName != null) {
+                this.localModelName = localModelName;
+                this.localModel = SDBFactory.connectNamedModel(store, localModelName);
+            }
         } else if (modelMaker != null) {
-            this.remoteModel = modelMaker.getModel(remoteModelName);
-            this.localModel = modelMaker.getModel(localModelName);
+            if (remoteModelName != null) {
+                this.remoteModelName = remoteModelName;
+                this.remoteModel = modelMaker.getModel(remoteModelName);
+            }
+            if (localModelName != null) {
+                this.localModelName = localModelName;
+                this.localModel = modelMaker.getModel(localModelName);
+            }
         } else {
             throw new IllegalArgumentException("Store or ModelMaker must be provided");
         }
-        this.fileManager = FileManager.get();
+        fileManager = FileManager.get();
         this.printStream = printStream;
     }
 
     public void add(String fileName) throws IOException {
-        InputStream inputStream = fileManager.open(fileName);
-        log("Adding RDF to database...");
-        long startTime = System.currentTimeMillis();
-        long startSize = remoteModel.size();
-        remoteModel.read(inputStream, "", "N-TRIPLE");
+        InputStream inputStream;
+        long startTime, endTime, duration;
+        long startSize, endSize, sizeDelta;
+
+        inputStream = fileManager.open(fileName);
+        log("Adding assertions in " + fileName + " to " + localModelName + " model");
+        startSize = localModel.size();
+        startTime = System.currentTimeMillis();
+        localModel.read(inputStream, "", "N-TRIPLE");
         inputStream.close();
-        long endTime = System.currentTimeMillis();
-        long endSize = remoteModel.size();
-        long duration = endTime - startTime;
-        long sizeDelta = endSize - startSize;
+        endTime = System.currentTimeMillis();
+        endSize = localModel.size();
+        duration = endTime - startTime;
+        sizeDelta = endSize - startSize;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
     }
 
     public void remove(String fileName) throws IOException {
-        InputStream inputStream = fileManager.open(fileName);
-        log("Removing RDF from database...");
-        long startTime = System.currentTimeMillis();
-        long startSize = remoteModel.size();
-        Model removeModel = ModelFactory.createDefaultModel();
+        InputStream inputStream;
+        long startTime, endTime, duration;
+        long startSize, endSize, sizeDelta;
+        Model removeModel;
+
+        inputStream = fileManager.open(fileName);
+        log("Removing assertions in " + fileName + " from " + localModelName + " model");
+        startSize = localModel.size();
+        startTime = System.currentTimeMillis();
+        removeModel = ModelFactory.createDefaultModel();
         removeModel.read(inputStream, "", "N-TRIPLE");
-        remoteModel.remove(removeModel);
+        localModel.remove(removeModel);
         inputStream.close();
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        long endSize = remoteModel.size();
-        long sizeDelta = endSize - startSize;
+        endTime = System.currentTimeMillis();
+        duration = endTime - startTime;
+        endSize = localModel.size();
+        sizeDelta = endSize - startSize;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
     }
 
     public void process(String addFilename, String delFilename) throws IOException {
         /* Temporary models used in processing */
-        Model addModel = null;
-        Model delModel = null;
+        List<QuerySolution> solutionList;
+        Model typesModel, outputModel, addModel, delModel;
+        long startTime, endTime, duration;
 
-        if (addFilename != null) {
-            addModel = loadModelFromFile(addFilename);
-        }
-        if (delFilename != null) {
-            delModel = loadModelFromFile(delFilename);
-        }
+        addModel = loadModelFromFile(addFilename);
+        delModel = loadModelFromFile(delFilename);
 
-        if (addModel != null) {
-            List<QuerySolution> solutionList;
-            Model typesModel;
+        log("Adding assertions in " + addFilename + " to " + remoteModelName + " model");
+        startTime = System.currentTimeMillis();
+        remoteModel.add(addModel);
+        endTime = System.currentTimeMillis();
+        duration = endTime - startTime;
+        log("Action completed [" + duration + "ms, " + addModel.size() + " records]");
 
-            log("Adding " + addFilename + " to remote model");
-            remoteModel.add(addModel);
+        outputModel = ModelFactory.createDefaultModel();
 
-            String typesQuery = "CONSTRUCT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o }\n"
-                    + "WHERE\n"
-                    + "{\n"
-                    + "?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o\n"
-                    + "}";
-            QueryExecution qe = QueryExecutionFactory.create(typesQuery, Syntax.syntaxARQ, remoteModel);
-            typesModel = qe.execConstruct();
+        String typesQuery = "CONSTRUCT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o }\n"
+                + "WHERE\n"
+                + "{\n"
+                + "?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o\n"
+                + "}";
+        QueryExecution qe = QueryExecutionFactory.create(typesQuery, Syntax.syntaxARQ, remoteModel);
+        typesModel = qe.execConstruct();
 
-            String query = "SELECT DISTINCT ?o WHERE { ?s ?p ?o }";
+        String query = "SELECT DISTINCT ?o WHERE { ?s ?p ?o }";
 
-            solutionList = results(query, localModel);
+        solutionList = results(query, localModel);
 
-            for (QuerySolution solution : solutionList) {
-                RDFNode node = solution.get("?o");
-                if (node.isResource()) {
-                    String nodeURI = node.asResource().getURI();
-                    String referredToSubjectQuery = "SELECT ?p ?o WHERE {<" + nodeURI + "> ?p ?o}";
-                    String referredToObjectQuery = "SELECT ?s ?p WHERE {?s ?p <" + nodeURI + ">}";
-                    if (resultsSize(referredToSubjectQuery, delModel) > 0 || resultsSize(referredToObjectQuery, delModel) > 0) {
-                        /* O is referred to in DEL */
-                        if (resultsSize(referredToSubjectQuery, addModel) == 0 && resultsSize(referredToObjectQuery, addModel) == 0) {
-                            /* O is not referred to in ADD */
-                            String typeAssertionQuery = "SELECT ?type WHERE {<" + nodeURI + "> <" + TYPE + "> ?type}";
-                            List<String> typeSolutionList;
+        for (QuerySolution solution : solutionList) {
+            RDFNode node = solution.get("?o");
+            if (node.isResource()) {
+                String nodeURI = node.asResource().getURI();
+                String referredToSubjectQuery = "SELECT ?p ?o WHERE {<" + nodeURI + "> ?p ?o}";
+                String referredToObjectQuery = "SELECT ?s ?p WHERE {?s ?p <" + nodeURI + ">}";
+                if (resultsSize(referredToSubjectQuery, delModel) > 0 || resultsSize(referredToObjectQuery, delModel) > 0) {
+                    /* O is referred to in DEL */
+                    if (resultsSize(referredToSubjectQuery, addModel) == 0 && resultsSize(referredToObjectQuery, addModel) == 0) {
+                        /* O is not referred to in ADD */
+                        String typeAssertionQuery = "SELECT ?type WHERE {<" + nodeURI + "> <" + TYPE + "> ?type}";
+                        List<String> typeSolutionList;
 
-                            typeSolutionList = getQueryAttribute(typeAssertionQuery, delModel, "?type");
-                            if (!typeSolutionList.isEmpty()) {
-                                /* Assertion O <rfd:type> T exists in DEL */
-                                List<String> otherTypeSolutionList;
+                        typeSolutionList = getQueryAttribute(typeAssertionQuery, delModel, "?type");
+                        if (!typeSolutionList.isEmpty()) {
+                            /* Assertion O <rfd:type> T exists in DEL */
+                            List<String> otherTypeSolutionList;
 
-                                otherTypeSolutionList = getQueryAttribute(typeAssertionQuery, typesModel, "?type");
-                                if (otherTypeSolutionList.containsAll(typeSolutionList) && otherTypeSolutionList.size() == typeSolutionList.size()) {
-                                    /* Assertion O <rdf:type> T' (where T' != T) does not exist in TYPES */
-                                    Model childModel = childModel(node, delModel, null);
-                                    log("Adding child model for " + nodeURI + " to local model, " + childModel.size() + " assertions");
-                                    localModel.add(childModel);
-                                }
+                            otherTypeSolutionList = getQueryAttribute(typeAssertionQuery, typesModel, "?type");
+                            if (otherTypeSolutionList.containsAll(typeSolutionList) && otherTypeSolutionList.size() == typeSolutionList.size()) {
+                                /* Assertion O <rdf:type> T' (where T' != T) does not exist in TYPES */
+                                Model childModel = childModel(node, delModel, null);
+                                log("Adding child model for " + nodeURI + " to local model");
+                                startTime = System.currentTimeMillis();
+                                localModel.add(childModel);
+                                outputModel.add(childModel);
+                                endTime = System.currentTimeMillis();
+                                duration = endTime - startTime;
+                                log("Action completed [" + duration + "ms, " + childModel.size() + " records]");
                             }
                         }
                     }
-                } else if (node.isAnon()) {
-                    log("Found anon resource: " + node.toString());
                 }
+            } else if (node.isAnon()) {
+                log("Found anon resource: " + node.toString());
             }
         }
-
-        if (delModel != null) {
-            log("Deleting " + delFilename + " from remote model");
-            remoteModel.remove(delModel);
-        }
-
+        FileOutputStream fos = new FileOutputStream("children.ttl");
+        outputModel.write(fos, "N-TRIPLE");
+        outputModel.close();
+        fos.close();
         addModel.close();
+
+        log("Deleting assertions in " + delFilename + " from " + remoteModelName + " model");
+        startTime = System.currentTimeMillis();
+        remoteModel.remove(delModel);
+        endTime = System.currentTimeMillis();
+        duration = endTime - startTime;
+        log("Action completed [" + duration + "ms, " + delModel.size() + " records]");
         delModel.close();
     }
 
     public void close() {
-        this.localModel.close();
-        this.remoteModel.close();
+        if (localModel != null) {
+            localModel.close();
+        }
+        if (remoteModel != null) {
+            remoteModel.close();
+        }
     }
 
     private List<String> getQueryAttribute(String query, Model model, String attribute) {
@@ -180,7 +216,7 @@ public class RDFController {
         return results(query, model).size();
     }
 
-    private List<QuerySolution> results(String query, Model model) {
+    private static List<QuerySolution> results(String query, Model model) {
         QueryExecution qexec;
         List<QuerySolution> solutionList;
         Iterator<QuerySolution> rs;
@@ -218,7 +254,7 @@ public class RDFController {
         return fileModel;
     }
 
-    private Model childModel(RDFNode subjectNode, Model originModel, Model childModel) {
+    private static Model childModel(RDFNode subjectNode, Model originModel, Model childModel) {
         if (childModel == null) {
             childModel = ModelFactory.createDefaultModel();
         }
@@ -238,9 +274,6 @@ public class RDFController {
             childModel.add(subject, property, objectNode);
             if (objectNode.isResource()) {
                 if (childModel.contains(objectNode.asResource(), null)) {
-                    /* The object of this result has already been processed as a
-                     *  subject so continue
-                     */
                     continue;
                 }
                 childModel = childModel(objectNode, originModel, childModel);
