@@ -10,6 +10,8 @@ DB_JENATYPE="SDB"
 DB_REMOTE_MODEL="http://vitro.mannlib.cornell.edu/default/vitro-kb-2"
 DB_LOCAL_MODEL="foobar"
 
+JAVA_ARGS="-Xmx2048m" 
+
 NOW=$(date +%s)
 LATEST_DATE=$(cat ${FILE_LATEST})
 LATEST_TS=$(date -d ${LATEST_DATE} +%s)
@@ -38,6 +40,7 @@ do
 	sed -i '/^<[^>]*><[^>]*>\.$/d' ${ADD_FILE}
 	sed -i '/^<[^>]*><[^>]*>\.$/d' ${DEL_FILE}
 	echo "Running ingest"
-	java -jar VivoIngest.jar ${INGEST_ARGS}
+	java ${JAVA_ARGS} -jar VivoIngest.jar ${INGEST_ARGS}
+    mv children.ttl children-${CURRENT_DATE}.ttl
 	echo "Ingest done"
 done

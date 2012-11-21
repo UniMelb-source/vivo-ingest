@@ -32,7 +32,6 @@ public class RDFController {
     private FileManager fileManager;
     private PrintStream printStream;
     private Log log = LogFactory.getLog(RDFController.class);
-    //"http://vitro.mannlib.cornell.edu/default/vitro-kb-2";
     private static String TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     public RDFController(Store store, String remoteModelName, String localModelName) {
@@ -113,6 +112,7 @@ public class RDFController {
         List<QuerySolution> solutionList;
         Model typesModel, outputModel, addModel, delModel;
         long startTime, endTime, duration;
+        long startSize, endSize, sizeDelta;
 
         addModel = loadModelFromFile(addFilename);
         delModel = loadModelFromFile(delFilename);
@@ -161,12 +161,15 @@ public class RDFController {
                                 /* Assertion O <rdf:type> T' (where T' != T) does not exist in TYPES */
                                 Model childModel = childModel(node, delModel, null);
                                 log("Adding child model for " + nodeURI + " to local model");
+                                startSize = localModel.size();
                                 startTime = System.currentTimeMillis();
                                 localModel.add(childModel);
                                 outputModel.add(childModel);
                                 endTime = System.currentTimeMillis();
+                                endSize = localModel.size();
                                 duration = endTime - startTime;
-                                log("Action completed [" + duration + "ms, " + childModel.size() + " records]");
+                                sizeDelta = endSize - startSize;
+                                log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
                             }
                         }
                     }
@@ -182,11 +185,14 @@ public class RDFController {
         addModel.close();
 
         log("Deleting assertions in " + delFilename + " from " + remoteModelName + " model");
+        startSize = remoteModel.size();
         startTime = System.currentTimeMillis();
         remoteModel.remove(delModel);
         endTime = System.currentTimeMillis();
+        endSize = remoteModel.size();
         duration = endTime - startTime;
-        log("Action completed [" + duration + "ms, " + delModel.size() + " records]");
+        sizeDelta = endSize - startSize;
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
         delModel.close();
     }
 
