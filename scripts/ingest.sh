@@ -1,14 +1,12 @@
 #!/bin/bash
 
+. config.sh
+
 FILE_LATEST="ingest.latest"
 DAYSEC=86400
 URL_BASE="http://www.findanexpert.unimelb.edu.au/vivoDeltas/"
-DB_STRING="jdbc:mysql://localhost/vivo"
-DB_USERNAME="vivo"
-DB_PASSWORD="vivo"
-DB_JENATYPE="SDB"
-DB_REMOTE_MODEL="http://vitro.mannlib.cornell.edu/default/vitro-kb-2"
-DB_LOCAL_MODEL="foobar"
+DB_LOCAL_MODEL="http://vitro.mannlib.cornell.edu/default/vitro-kb-2"
+DB_REMOTE_MODEL="foobar"
 
 JAVA_ARGS="-Xmx2048m" 
 

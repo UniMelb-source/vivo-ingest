@@ -73,6 +73,7 @@
     -->
     <target name="-post-jar">
         <copy file="scripts/ingest.sh" todir="${dist.dir}"/>
+        <copy file="scripts/config.sh" todir="${dist.dir}"/>
         <copy file="scripts/ingest.latest" todir="${dist.dir}" failonerror="false"/>
         <chmod file="${dist.dir}/ingest.sh" perm="+x"/>
     </target>
