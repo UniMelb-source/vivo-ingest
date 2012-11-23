@@ -1,0 +1,6 @@
+DB_STRING="jdbc:mysql://localhost/vivo"
+FAE_MODEL="http://vitro.mannlib.cornell.edu/default/vitro-kb-2"
+VIVO_MODEL="http://vitro.mannlib.cornell.edu/default/vitro-kb-2"
+USERNAME="vivo"
+PASSWORD="vivo"
+JENATYPE="SDB"

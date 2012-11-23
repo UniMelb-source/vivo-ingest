@@ -72,8 +72,8 @@
 
     -->
     <target name="-post-jar">
-        <copy file="ingest.sh" todir="${dist.dir}"/>
-        <copy file="ingest.latest" todir="${dist.dir}" failonerror="false"/>
+        <copy file="scripts/ingest.sh" todir="${dist.dir}"/>
+        <copy file="scripts/ingest.latest" todir="${dist.dir}" failonerror="false"/>
         <chmod file="${dist.dir}/ingest.sh" perm="+x"/>
     </target>
 </project>
