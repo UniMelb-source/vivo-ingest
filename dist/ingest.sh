@@ -5,8 +5,6 @@
 FILE_LATEST="ingest.latest"
 DAYSEC=86400
 URL_BASE="http://www.findanexpert.unimelb.edu.au/vivoDeltas/"
-DB_LOCAL_MODEL="http://vitro.mannlib.cornell.edu/default/vitro-kb-2"
-DB_REMOTE_MODEL="foobar"
 
 JAVA_ARGS="-Xmx2048m" 
 
@@ -23,7 +21,7 @@ do
 	ADD_URL=${URL_BASE}${ADD_FILE}
 	DEL_FILE=$(date -d @${LATEST_TS} +%Y%m%d)_DEL.ttl
 	DEL_URL=${URL_BASE}${DEL_FILE}
-	INGEST_ARGS="-action process -addFileName ${ADD_FILE} -removeFileName ${DEL_FILE} -jenaType SDB -dbString ${DB_STRING} -userName ${DB_USERNAME} -password ${DB_PASSWORD} -localModelName ${DB_LOCAL_MODEL} -remoteModelName ${DB_REMOTE_MODEL}"
+	INGEST_ARGS="-action process -addFileName ${ADD_FILE} -removeFileName ${DEL_FILE} -jenaType ${DB_JENATYPE} -dbString ${DB_STRING} -userName ${DB_USERNAME} -password ${DB_PASSWORD} -localModelName ${DB_LOCAL_MODEL} -remoteModelName ${DB_REMOTE_MODEL}"
 	echo "Fetching TTL files"
 	wget -nv ${ADD_URL} && wget -nv ${DEL_URL}
 	RETURN=$?
