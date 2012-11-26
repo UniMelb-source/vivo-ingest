@@ -23,7 +23,7 @@ do
 	DEL_URL=${URL_BASE}${DEL_FILE}
 	INGEST_ARGS="-action process -addFileName ${ADD_FILE} -removeFileName ${DEL_FILE} -jenaType ${DB_JENATYPE} -dbString ${DB_STRING} -userName ${DB_USERNAME} -password ${DB_PASSWORD} -localModelName ${DB_LOCAL_MODEL} -remoteModelName ${DB_REMOTE_MODEL}"
 	echo "Fetching TTL files"
-	wget -cnv ${ADD_URL} && wget -nv ${DEL_URL}
+	wget -cnv ${ADD_URL} && wget -cnv ${DEL_URL}
 	RETURN=$?
 	echo ${CURRENT_DATE} > ingest.latest
 	LATEST_TS=$((${LATEST_TS} + ${DAYSEC}))
