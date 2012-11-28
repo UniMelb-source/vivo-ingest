@@ -17,9 +17,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -178,10 +181,22 @@ public class RDFController {
                 log("Found anon resource: " + node.toString());
             }
         }
+
         FileOutputStream fos = new FileOutputStream("children.ttl");
+        Model processingConstructModel;
         outputModel.write(fos, "N-TRIPLE");
         outputModel.close();
         fos.close();
+        log("Processing construct model");
+        startSize = localModel.size();
+        startTime = System.currentTimeMillis();
+        processingConstructModel = processConstruct("processing-construct.sparql", remoteModel);
+        localModel.add(processingConstructModel);
+        endTime = System.currentTimeMillis();
+        endSize = localModel.size();
+        duration = endTime - startTime;
+        sizeDelta = endSize - startSize;
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
         addModel.close();
 
         log("Deleting assertions in " + delFilename + " from " + remoteModelName + " model");
@@ -220,6 +235,20 @@ public class RDFController {
 
     private int resultsSize(String query, Model model) {
         return results(query, model).size();
+    }
+
+    private Model processConstruct(String resourceName, Model model) throws IOException {
+        InputStream resourceInputStream;
+        StringWriter writer;
+        Model constructModel;
+        QueryExecution queryExecution;
+
+        resourceInputStream = this.getClass().getResourceAsStream(resourceName);
+        writer = new StringWriter();
+        IOUtils.copy(resourceInputStream, writer, Charset.defaultCharset());
+        queryExecution = QueryExecutionFactory.create(writer.toString(), Syntax.syntaxARQ, model);
+        constructModel = queryExecution.execConstruct();
+        return constructModel;
     }
 
     private static List<QuerySolution> results(String query, Model model) {

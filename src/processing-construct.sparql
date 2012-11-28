@@ -1,0 +1,15 @@
+PREFIX vitro-public: <http://vitro.mannlib.cornell.edu/ns/vitro/public#>
+CONSTRUCT {
+    ?imageThumb vitro-public:mimeType "image/jpeg"^^<http://www.w3.org/2001/XMLSchema#string> .
+    ?imageThumb vitro-public:filename "filename"^^<http://www.w3.org/2001/XMLSchema#string> .
+    ?imageThumb a vitro-public:File .
+    ?downloadLocationThumb vitro-public:directDownloadUrl ?directDownloadUrl .
+    ?downloadLocationThumb a vitro-public:FileByteStream . 
+}
+WHERE {
+    ?p vitro-public:mainImage ?image .
+    ?image vitro-public:downloadLocation ?downloadLocation .
+    ?downloadLocation vitro-public:directDownloadUrl ?directDownloadUrl .
+    ?image vitro-public:thumbnailImage ?imageThumb .
+    ?imageThumb vitro-public:downloadLocation ?downloadLocationThumb .
+}
