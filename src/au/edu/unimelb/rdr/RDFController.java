@@ -187,6 +187,7 @@ public class RDFController {
         outputModel.write(fos, "N-TRIPLE");
         outputModel.close();
         fos.close();
+        
         log("Processing construct model");
         startSize = localModel.size();
         startTime = System.currentTimeMillis();
