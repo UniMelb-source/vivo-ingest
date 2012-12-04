@@ -37,6 +37,6 @@ do
 	sed -i '/^<[^>]*><[^>]*>\.$/d' ${DEL_FILE}
 	echo "Running ingest"
 	java ${JAVA_ARGS} -jar VivoIngest.jar ${INGEST_ARGS}
-    mv children.ttl children-${CURRENT_DATE}.ttl
+	mv children.ttl children-${CURRENT_DATE}.ttl
 	echo "Ingest done"
 done
