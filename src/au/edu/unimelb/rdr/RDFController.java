@@ -73,6 +73,7 @@ public class RDFController {
 
     public void add(String fileName) throws IOException {
         InputStream inputStream;
+        Model processingConstructModel;
         long startTime, endTime, duration;
         long startSize, endSize, sizeDelta;
 
@@ -82,6 +83,17 @@ public class RDFController {
         startTime = System.currentTimeMillis();
         localModel.read(inputStream, "", "N-TRIPLE");
         inputStream.close();
+        endTime = System.currentTimeMillis();
+        endSize = localModel.size();
+        duration = endTime - startTime;
+        sizeDelta = endSize - startSize;
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
+
+        log("Processing construct model");
+        startSize = localModel.size();
+        startTime = System.currentTimeMillis();
+        processingConstructModel = processConstruct("processing-construct.sparql", remoteModel);
+        localModel.add(processingConstructModel);
         endTime = System.currentTimeMillis();
         endSize = localModel.size();
         duration = endTime - startTime;
@@ -111,7 +123,6 @@ public class RDFController {
     }
 
     public void process(String addFilename, String delFilename) throws IOException {
-        /* Temporary models used in processing */
         List<QuerySolution> solutionList;
         Model typesModel, outputModel, addModel, delModel;
         long startTime, endTime, duration;
@@ -182,12 +193,11 @@ public class RDFController {
             }
         }
 
-        FileOutputStream fos = new FileOutputStream("children.ttl");
-        Model processingConstructModel;
-        outputModel.write(fos, "N-TRIPLE");
+        writeModelToFile(outputModel, "children.ttl");
         outputModel.close();
-        fos.close();
-        
+
+        Model processingConstructModel;
+
         log("Processing construct model");
         startSize = localModel.size();
         startTime = System.currentTimeMillis();
@@ -288,6 +298,14 @@ public class RDFController {
             log("Error closing stream: " + ioe.getMessage());
         }
         return fileModel;
+    }
+
+    private void writeModelToFile(Model model, String fileName) throws IOException {
+        FileOutputStream fos;
+
+        fos = new FileOutputStream(fileName);
+        model.write(fos, "N-TRIPLE");
+        fos.close();
     }
 
     private static Model childModel(RDFNode subjectNode, Model originModel, Model childModel) {
