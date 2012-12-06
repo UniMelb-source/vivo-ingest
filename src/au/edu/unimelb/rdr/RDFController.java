@@ -72,17 +72,15 @@ public class RDFController {
     }
 
     public void add(String fileName) throws IOException {
-        InputStream inputStream;
-        Model processingConstructModel;
+        Model addModel, processingConstructModel;
         long startTime, endTime, duration;
         long startSize, endSize, sizeDelta;
 
-        inputStream = fileManager.open(fileName);
         log("Adding assertions in " + fileName + " to " + localModelName + " model");
+        addModel = loadModelFromFile(fileName);
         startSize = localModel.size();
         startTime = System.currentTimeMillis();
-        localModel.read(inputStream, "", "N-TRIPLE");
-        inputStream.close();
+        localModel.add(addModel);
         endTime = System.currentTimeMillis();
         endSize = localModel.size();
         duration = endTime - startTime;
@@ -92,7 +90,7 @@ public class RDFController {
         log("Processing construct model");
         startSize = localModel.size();
         startTime = System.currentTimeMillis();
-        processingConstructModel = processConstruct("processing-construct.sparql", remoteModel);
+        processingConstructModel = processConstruct("/processing-construct.sparql", addModel);
         localModel.add(processingConstructModel);
         endTime = System.currentTimeMillis();
         endSize = localModel.size();
@@ -102,19 +100,15 @@ public class RDFController {
     }
 
     public void remove(String fileName) throws IOException {
-        InputStream inputStream;
         long startTime, endTime, duration;
         long startSize, endSize, sizeDelta;
         Model removeModel;
 
-        inputStream = fileManager.open(fileName);
         log("Removing assertions in " + fileName + " from " + localModelName + " model");
+        removeModel = loadModelFromFile(fileName);
         startSize = localModel.size();
         startTime = System.currentTimeMillis();
-        removeModel = ModelFactory.createDefaultModel();
-        removeModel.read(inputStream, "", "N-TRIPLE");
         localModel.remove(removeModel);
-        inputStream.close();
         endTime = System.currentTimeMillis();
         duration = endTime - startTime;
         endSize = localModel.size();
@@ -132,11 +126,14 @@ public class RDFController {
         delModel = loadModelFromFile(delFilename);
 
         log("Adding assertions in " + addFilename + " to " + remoteModelName + " model");
+        startSize = remoteModel.size();
         startTime = System.currentTimeMillis();
         remoteModel.add(addModel);
         endTime = System.currentTimeMillis();
+        endSize = remoteModel.size();
         duration = endTime - startTime;
-        log("Action completed [" + duration + "ms, " + addModel.size() + " records]");
+        sizeDelta = endSize - startSize;
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
 
         outputModel = ModelFactory.createDefaultModel();
 
@@ -201,7 +198,7 @@ public class RDFController {
         log("Processing construct model");
         startSize = localModel.size();
         startTime = System.currentTimeMillis();
-        processingConstructModel = processConstruct("processing-construct.sparql", remoteModel);
+        processingConstructModel = processConstruct("/processing-construct.sparql", remoteModel);
         localModel.add(processingConstructModel);
         endTime = System.currentTimeMillis();
         endSize = localModel.size();
