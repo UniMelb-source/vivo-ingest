@@ -1,0 +1,8 @@
+PREFIX vitro-public: <http://vitro.mannlib.cornell.edu/ns/vitro/public#>
+CONSTRUCT {
+    ?downloadLocation vitro-public:directDownloadUrl ?directDownloadUri .
+}
+WHERE {
+    ?downloadLocation vitro-public:directDownloadUrl ?directDownloadUri .
+    FILTER regex(?directDownloadUri, "^/")  .
+}

@@ -3,6 +3,7 @@ CONSTRUCT {
     ?imageThumb vitro-public:mimeType "image/jpeg"^^<http://www.w3.org/2001/XMLSchema#string> .
     ?imageThumb vitro-public:filename "filename"^^<http://www.w3.org/2001/XMLSchema#string> .
     ?imageThumb a vitro-public:File .
+    ?downloadLocation vitro-public:directDownloadUrl ?remoteDirectDownloadUri .
     ?downloadLocationThumb vitro-public:directDownloadUrl ?remoteDirectDownloadUri .
     ?downloadLocationThumb a vitro-public:FileByteStream . 
 }

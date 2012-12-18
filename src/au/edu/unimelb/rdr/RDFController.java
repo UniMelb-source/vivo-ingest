@@ -95,9 +95,16 @@ public class RDFController {
         sizeDelta = endSize - startSize;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
 
-        log("Processing construct model");
+        log("Processing add construct model");
         startTime = System.currentTimeMillis();
-        sizeDelta = processConstruct(addModel, localModel);
+        sizeDelta = processAddConstruct(addModel, localModel);
+        endTime = System.currentTimeMillis();
+        duration = endTime - startTime;
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
+
+        log("Processing remove construct model");
+        startTime = System.currentTimeMillis();
+        sizeDelta = processRemoveConstruct(localModel);
         endTime = System.currentTimeMillis();
         duration = endTime - startTime;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
@@ -197,13 +204,20 @@ public class RDFController {
         writeModelToFile(outputModel, "children.ttl");
         outputModel.close();
 
-        log("Processing construct model");
+        log("Processing add construct model");
         startTime = System.currentTimeMillis();
-        sizeDelta = processConstruct(remoteModel, localModel);
+        sizeDelta = processAddConstruct(remoteModel, localModel);
         endTime = System.currentTimeMillis();
         duration = endTime - startTime;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
         addModel.close();
+
+        log("Processing remove construct model");
+        startTime = System.currentTimeMillis();
+        sizeDelta = processRemoveConstruct(remoteModel);
+        endTime = System.currentTimeMillis();
+        duration = endTime - startTime;
+        log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
 
         log("Deleting assertions in " + delFilename + " from " + remoteModelName + " model");
         startSize = remoteModel.size();
@@ -243,7 +257,7 @@ public class RDFController {
         return results(query, model).size();
     }
 
-    private long processConstruct(Model sourceModel, Model destinationModel) throws IOException {
+    private long processAddConstruct(Model sourceModel, Model destinationModel) throws IOException {
         InputStream resourceInputStream;
         StringWriter writer;
         Model constructModel;
@@ -263,18 +277,32 @@ public class RDFController {
             resourceInputStream.close();
         }
 
+        endSize = destinationModel.size();
+        sizeDelta = endSize - startSize;
+        return sizeDelta;
+    }
+
+    private long processRemoveConstruct(Model model) throws IOException {
+        InputStream resourceInputStream;
+        StringWriter writer;
+        Model constructModel;
+        QueryExecution queryExecution;
+        long startSize, endSize, sizeDelta;
+
+        startSize = model.size();
+
         for (String removeName : getDirectoryContents("/sparql/remove")) {
             resourceInputStream = this.getClass().getResourceAsStream(removeName);
             writer = new StringWriter();
             IOUtils.copy(resourceInputStream, writer, Charset.defaultCharset());
-            queryExecution = QueryExecutionFactory.create(writer.toString(), Syntax.syntaxARQ, sourceModel);
+            queryExecution = QueryExecutionFactory.create(writer.toString(), Syntax.syntaxARQ, model);
             constructModel = queryExecution.execConstruct();
-            destinationModel.remove(constructModel);
+            model.remove(constructModel);
             writer.close();
             resourceInputStream.close();
         }
 
-        endSize = destinationModel.size();
+        endSize = model.size();
         sizeDelta = endSize - startSize;
         return sizeDelta;
     }
