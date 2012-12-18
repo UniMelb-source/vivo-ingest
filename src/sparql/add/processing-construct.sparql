@@ -3,7 +3,7 @@ CONSTRUCT {
     ?imageThumb vitro-public:mimeType "image/jpeg"^^<http://www.w3.org/2001/XMLSchema#string> .
     ?imageThumb vitro-public:filename "filename"^^<http://www.w3.org/2001/XMLSchema#string> .
     ?imageThumb a vitro-public:File .
-    ?downloadLocationThumb vitro-public:directDownloadUrl ?directDownloadUrl .
+    ?downloadLocationThumb vitro-public:directDownloadUrl ?remoteDirectDownloadUri .
     ?downloadLocationThumb a vitro-public:FileByteStream . 
 }
 WHERE {
@@ -12,4 +12,6 @@ WHERE {
     ?downloadLocation vitro-public:directDownloadUrl ?directDownloadUrl .
     ?image vitro-public:thumbnailImage ?imageThumb .
     ?imageThumb vitro-public:downloadLocation ?downloadLocationThumb .
+    BIND(CONCAT("http://findanexpert.unimelb.edu.au", ?directDownloadUrl) AS ?remoteDirectDownloadUri) .
+    FILTER regex(?directDownloadUrl, "^(?!http://)") .
 }

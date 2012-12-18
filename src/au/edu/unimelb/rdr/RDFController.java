@@ -18,10 +18,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -72,7 +80,7 @@ public class RDFController {
     }
 
     public void add(String fileName) throws IOException {
-        Model addModel, processingConstructModel;
+        Model addModel;
         long startTime, endTime, duration;
         long startSize, endSize, sizeDelta;
 
@@ -88,14 +96,10 @@ public class RDFController {
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
 
         log("Processing construct model");
-        startSize = localModel.size();
         startTime = System.currentTimeMillis();
-        processingConstructModel = processConstruct("/processing-construct.sparql", addModel);
-        localModel.add(processingConstructModel);
+        sizeDelta = processConstruct(addModel, localModel);
         endTime = System.currentTimeMillis();
-        endSize = localModel.size();
         duration = endTime - startTime;
-        sizeDelta = endSize - startSize;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
     }
 
@@ -193,17 +197,11 @@ public class RDFController {
         writeModelToFile(outputModel, "children.ttl");
         outputModel.close();
 
-        Model processingConstructModel;
-
         log("Processing construct model");
-        startSize = localModel.size();
         startTime = System.currentTimeMillis();
-        processingConstructModel = processConstruct("/processing-construct.sparql", remoteModel);
-        localModel.add(processingConstructModel);
+        sizeDelta = processConstruct(remoteModel, localModel);
         endTime = System.currentTimeMillis();
-        endSize = localModel.size();
         duration = endTime - startTime;
-        sizeDelta = endSize - startSize;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
         addModel.close();
 
@@ -245,18 +243,79 @@ public class RDFController {
         return results(query, model).size();
     }
 
-    private Model processConstruct(String resourceName, Model model) throws IOException {
+    private long processConstruct(Model sourceModel, Model destinationModel) throws IOException {
         InputStream resourceInputStream;
         StringWriter writer;
         Model constructModel;
         QueryExecution queryExecution;
+        long startSize, endSize, sizeDelta;
 
-        resourceInputStream = this.getClass().getResourceAsStream(resourceName);
-        writer = new StringWriter();
-        IOUtils.copy(resourceInputStream, writer, Charset.defaultCharset());
-        queryExecution = QueryExecutionFactory.create(writer.toString(), Syntax.syntaxARQ, model);
-        constructModel = queryExecution.execConstruct();
-        return constructModel;
+        startSize = destinationModel.size();
+
+        for (String addName : getDirectoryContents("/sparql/add")) {
+            resourceInputStream = this.getClass().getResourceAsStream(addName);
+            writer = new StringWriter();
+            IOUtils.copy(resourceInputStream, writer, Charset.defaultCharset());
+            queryExecution = QueryExecutionFactory.create(writer.toString(), Syntax.syntaxARQ, sourceModel);
+            constructModel = queryExecution.execConstruct();
+            destinationModel.add(constructModel);
+            writer.close();
+            resourceInputStream.close();
+        }
+
+        for (String removeName : getDirectoryContents("/sparql/remove")) {
+            resourceInputStream = this.getClass().getResourceAsStream(removeName);
+            writer = new StringWriter();
+            IOUtils.copy(resourceInputStream, writer, Charset.defaultCharset());
+            queryExecution = QueryExecutionFactory.create(writer.toString(), Syntax.syntaxARQ, sourceModel);
+            constructModel = queryExecution.execConstruct();
+            destinationModel.remove(constructModel);
+            writer.close();
+            resourceInputStream.close();
+        }
+
+        endSize = destinationModel.size();
+        sizeDelta = endSize - startSize;
+        return sizeDelta;
+    }
+
+    private List<String> getDirectoryContents(String directoryName) throws IOException {
+
+        URL directoryUrl = this.getClass().getResource(directoryName);
+
+        if (directoryUrl.getProtocol().equals("jar")) {
+            String jarPath;
+            JarFile jar;
+            Enumeration<JarEntry> entries;
+            List<String> result;
+
+            if (directoryName.startsWith("/")) {
+                directoryName = directoryName.substring(1);
+            }
+            jarPath = directoryUrl.getPath().substring(5, directoryUrl.getPath().indexOf("!"));
+            jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"));
+            entries = jar.entries();
+            result = new ArrayList<String>();
+            while (entries.hasMoreElements()) {
+                String name;
+
+                name = entries.nextElement().getName();
+                if (name.endsWith("/")) {
+                    continue;
+                }
+                if (name.startsWith(directoryName + "/")) {
+                    int checkSubdir;
+
+                    checkSubdir = name.indexOf("/");
+                    if (checkSubdir >= directoryName.length()) {
+                        name = name.substring(0, checkSubdir);
+                    }
+                    result.add("/" + name);
+                }
+            }
+            return result;
+        }
+        return Collections.<String>emptyList();
     }
 
     private static List<QuerySolution> results(String query, Model model) {

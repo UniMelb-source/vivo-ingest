@@ -34,7 +34,11 @@ do
 	fi
 	echo "Cleaning up basic TTL errors"
 	sed -i '/^<[^>]*><[^>]*>\.$/d' ${ADD_FILE}
+    sed -i '/^[^<].*$/d' ${ADD_FILE}
+    sed -i '/^$/d' ${ADD_FILE}
 	sed -i '/^<[^>]*><[^>]*>\.$/d' ${DEL_FILE}
+    sed -i '/^[^<].*$/d' ${DEL_FILE}
+    sed -i '/^$/d' ${DEL_FILE}
 	echo "Running ingest"
 	java ${JAVA_ARGS} -jar VivoIngest.jar ${INGEST_ARGS}
 	mv children.ttl children-${CURRENT_DATE}.ttl
