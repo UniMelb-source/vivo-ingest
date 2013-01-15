@@ -125,6 +125,9 @@ public class RDFController {
         endSize = localModel.size();
         sizeDelta = endSize - startSize;
         log("Action completed [" + duration + "ms, " + sizeDelta + " records]");
+        /*
+         * TODO: consider removing previously added inferred construct assertions
+         */
     }
 
     public void process(String addFilename, String delFilename) throws IOException {

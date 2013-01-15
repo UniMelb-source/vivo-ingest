@@ -38,8 +38,6 @@ do
 		echo "Adding file"
 		clean_up_file ${ADD_FILE}
 		java ${JAVA_ARGS} -jar VivoIngest.jar ${POPULATE_ARGS}
-        cat children.ttl >> ${CURRENT_DATE}-children.ttl
-        rm children.ttl
         cat construct-add.ttl >> ${CURRENT_DATE}-construct-add.ttl
         rm construct-add.ttl
         cat construct-remove.ttl >> ${CURRENT_DATE}-construct-remove.ttl
@@ -56,11 +54,5 @@ do
 		echo "Deleting file"
 		clean_up_file ${DEL_FILE}
 		java ${JAVA_ARGS} -jar VivoIngest.jar ${DEPOPULATE_ARGS}
-        cat children.ttl >> ${CURRENT_DATE}-children.ttl
-        rm children.ttl
-        cat construct-add.ttl >> ${CURRENT_DATE}-construct-add.ttl
-        rm construct-add.ttl
-        cat construct-remove.ttl >> ${CURRENT_DATE}-construct-remove.ttl
-        rm construct-remove.ttl
 	fi
 done
