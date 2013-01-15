@@ -72,9 +72,12 @@
 
     -->
     <target name="-post-jar">
-        <copy file="scripts/ingest.sh" todir="${dist.dir}"/>
         <copy file="scripts/config.sh" todir="${dist.dir}"/>
+        <copy file="scripts/include.sh" todir="${dist.dir}"/>
+        <copy file="scripts/ingest.sh" todir="${dist.dir}"/>
         <copy file="scripts/ingest.latest" todir="${dist.dir}" failonerror="false"/>
+        <copy file="scripts/populate.sh" todir="${dist.dir}"/>
         <chmod file="${dist.dir}/ingest.sh" perm="+x"/>
+        <chmod file="${dist.dir}/populate.sh" perm="+x"/>
     </target>
 </project>

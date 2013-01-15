@@ -1,6 +1,7 @@
 #!/bin/bash
 
 . config.sh
+. include.sh
 
 FILE_LATEST="ingest.latest"
 DAYSEC=86400
@@ -25,20 +26,15 @@ do
 	echo "Fetching TTL files"
 	wget -cnv ${ADD_URL} && wget -cnv ${DEL_URL}
 	RETURN=$?
-	echo ${CURRENT_DATE} > ingest.latest
+	echo ${CURRENT_DATE} > ${FILE_LATEST}
 	LATEST_TS=$((${LATEST_TS} + ${DAYSEC}))
 	if [ ${RETURN} -gt 0 ]
 	then
 		echo "Unable to fetch files: ${RETURN}"
 		continue
 	fi
-	echo "Cleaning up basic TTL errors"
-	sed -i '/^<[^>]*><[^>]*>\.$/d' ${ADD_FILE}
-    sed -i '/^[^<].*$/d' ${ADD_FILE}
-    sed -i '/^$/d' ${ADD_FILE}
-	sed -i '/^<[^>]*><[^>]*>\.$/d' ${DEL_FILE}
-    sed -i '/^[^<].*$/d' ${DEL_FILE}
-    sed -i '/^$/d' ${DEL_FILE}
+	clean_up_file ${ADD_FILE}
+	clean_up_file ${DEL_FILE}
 	echo "Running ingest"
 	java ${JAVA_ARGS} -jar VivoIngest.jar ${INGEST_ARGS}
 	mv children.ttl ${CURRENT_DATE}-children.ttl
