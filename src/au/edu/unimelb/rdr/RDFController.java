@@ -261,10 +261,12 @@ public class RDFController {
         InputStream resourceInputStream;
         StringWriter writer;
         Model constructModel;
+        Model totalConstructModel;
         QueryExecution queryExecution;
         long startSize, endSize, sizeDelta;
 
         startSize = destinationModel.size();
+        totalConstructModel = ModelFactory.createDefaultModel();
 
         for (String addName : getDirectoryContents("/sparql/add")) {
             resourceInputStream = this.getClass().getResourceAsStream(addName);
@@ -275,8 +277,12 @@ public class RDFController {
             destinationModel.add(constructModel);
             writer.close();
             resourceInputStream.close();
+            totalConstructModel.add(constructModel);
+            constructModel.close();
         }
 
+        writeModelToFile(totalConstructModel, "construct-add.ttl");
+        totalConstructModel.close();
         endSize = destinationModel.size();
         sizeDelta = endSize - startSize;
         return sizeDelta;
@@ -286,10 +292,12 @@ public class RDFController {
         InputStream resourceInputStream;
         StringWriter writer;
         Model constructModel;
+        Model totalConstructModel;
         QueryExecution queryExecution;
         long startSize, endSize, sizeDelta;
 
         startSize = model.size();
+        totalConstructModel = ModelFactory.createDefaultModel();
 
         for (String removeName : getDirectoryContents("/sparql/remove")) {
             resourceInputStream = this.getClass().getResourceAsStream(removeName);
@@ -300,7 +308,12 @@ public class RDFController {
             model.remove(constructModel);
             writer.close();
             resourceInputStream.close();
+            totalConstructModel.add(constructModel);
+            constructModel.close();
         }
+
+        writeModelToFile(totalConstructModel, "construct-remove.ttl");
+        totalConstructModel.close();
 
         endSize = model.size();
         sizeDelta = endSize - startSize;
