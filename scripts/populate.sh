@@ -38,10 +38,11 @@ do
 		echo "Adding file"
 		clean_up_file ${ADD_FILE}
 		java ${JAVA_ARGS} -jar VivoIngest.jar ${POPULATE_ARGS}
-        cat construct-add.ttl >> ${CURRENT_DATE}-construct-add.ttl
-        rm construct-add.ttl
-        cat construct-remove.ttl >> ${CURRENT_DATE}-construct-remove.ttl
-        rm construct-remove.ttl
+		cat construct-add.ttl >> ${CURRENT_DATE}-construct-add.ttl
+		rm construct-add.ttl
+		cat construct-remove.ttl >> ${CURRENT_DATE}-construct-remove.ttl
+		rm construct-remove.ttl
+		bzip2 ${ADD_FILE}
 	fi
 
 	echo "Fetching del file"
@@ -54,5 +55,6 @@ do
 		echo "Deleting file"
 		clean_up_file ${DEL_FILE}
 		java ${JAVA_ARGS} -jar VivoIngest.jar ${DEPOPULATE_ARGS}
+		bzip2 ${DEL_FILE}
 	fi
 done

@@ -31,8 +31,8 @@ do
 	wget -cnv ${ADD_URL}
 	ADD_RETURN=$?
 
-    echo "Fetching del file"
-    wget -cnv ${DEL_URL}
+	echo "Fetching del file"
+	wget -cnv ${DEL_URL}
 	DEL_RETURN=$?
 
 	if [ ${ADD_RETURN} -gt 0 -a ${DEL_RETURN} -gt 0 ]
@@ -41,19 +41,19 @@ do
 		continue
 	fi
 
-    if [ ${ADD_RETURN} -gt 0 ]
-    then
-        touch ${ADD_FILE}
-    else
-	    clean_up_file ${ADD_FILE}
-    fi
+	if [ ${ADD_RETURN} -gt 0 ]
+	then
+		touch ${ADD_FILE}
+	else
+		clean_up_file ${ADD_FILE}
+	fi
 
-    if [ ${DEL_RETURN} -gt 0 ]
-    then
-        touch ${DEL_FILE}
-    else
-	    clean_up_file ${DEL_FILE}
-    fi
+	if [ ${DEL_RETURN} -gt 0 ]
+	then
+		touch ${DEL_FILE}
+	else
+		clean_up_file ${DEL_FILE}
+	fi
 
 	echo "Running ingest"
 	java ${JAVA_ARGS} -jar VivoIngest.jar ${INGEST_ARGS}
@@ -61,4 +61,6 @@ do
 	mv construct-add.ttl ${CURRENT_DATE}-construct-add.ttl
 	mv construct-remove.ttl ${CURRENT_DATE}-construct-remove.ttl
 	echo "Ingest done"
+	bzip2 ${ADD_FILE}
+	bzip2 ${DEL_FILE}
 done
