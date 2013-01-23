@@ -15,14 +15,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 public class VivoIngest {
-    
+
     private static Log log = LogFactory.getLog(RDFController.class);
-    
+
     private static CommandLine parseOptions(String[] args) {
         Options options;
         CommandLineParser parser;
         CommandLine cmd = null;
-        
+
         options = new Options();
         options.addOption(OptionBuilder.withArgName("database-user-name")
                 .hasArg()
@@ -102,27 +102,27 @@ public class VivoIngest {
                     consoleHelp(options);
                 }
             }
-            
+
         } catch (ParseException pe) {
             consoleHelp(options);
         }
         return cmd;
     }
-    
+
     public static void main(String[] args) throws IOException {
         CommandLine cmd = null;
         SDBDatabaseConnection sdbConnection = null;
         DatabaseConnection rdbConnection = null;
         cmd = parseOptions(args);
-        
+
         String dbType = null;
-        
+
         if (cmd.hasOption("dbType")) {
             dbType = cmd.getOptionValue("dbType");
         } else {
             dbType = "MySQL";
         }
-        
+
         String action = cmd.getOptionValue("action");
         String remoteModelName = cmd.getOptionValue("remoteModelName");
         String localModelName = cmd.getOptionValue("localModelName");
@@ -132,7 +132,7 @@ public class VivoIngest {
         String removeFileName = cmd.getOptionValue("removeFileName");
         String userName = cmd.getOptionValue("userName");
         String jenaType = cmd.getOptionValue("jenaType");
-        
+
         RDFController controller;
         if (jenaType.equals("SDB")) {
             sdbConnection = new SDBDatabaseConnection(userName, password, dbString, dbType);
@@ -151,7 +151,7 @@ public class VivoIngest {
         if (action.equals("process")) {
             controller.process(addFileName, removeFileName);
         }
-        
+
         controller.close();
         if (sdbConnection != null) {
             sdbConnection.closeDatabaseConnection();
@@ -160,19 +160,19 @@ public class VivoIngest {
             rdbConnection.closeDatabaseConnection();
         }
     }
-    
+
     private static void consoleHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        
+
         formatter.printHelp("java -jar VivoIngest.jar", options);
         System.exit(1);
     }
-    
+
     private static void info(String output) {
         System.out.println(output);
         log.info(output);
     }
-    
+
     private static void error(String output) {
         System.out.println(output);
         log.error(output);
