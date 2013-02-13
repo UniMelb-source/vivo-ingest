@@ -40,6 +40,8 @@ do
 	if [ ${ADD_RETURN} -gt 0 -a ${DEL_RETURN} -gt 0 ]
 	then
 		echo "Unable to fetch files"
+		rm -f ${ADD_FILE}
+		rm -f ${DEL_FILE}
 		continue
 	fi
 
