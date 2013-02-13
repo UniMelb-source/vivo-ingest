@@ -9,6 +9,8 @@ USER_SHELL=/bin/false
 BIN_DIR=${USER_HOME}/bin
 LOG_DIR=/var/log/rdr-unimelb
 
+WORKING_DIR=${USER_HOME}/ingest
+
 echo "Adding user to system..."
 groupadd ${USER_GROUP}
 useradd -m -d ${USER_HOME} -g ${USER_GROUP} -s ${USER_SHELL} ${USER_NAME}
@@ -25,3 +27,7 @@ sed -i -e "s#%%USER_NAME%%#${USER_NAME}#g" -e "s#%%BIN_DIR%%#${BIN_DIR}#g" ${CRO
 echo "Creating log directory..."
 mkdir -p ${LOG_DIR}
 chown -R ${USER_NAME}:${USER_GROUP} ${LOG_DIR}
+
+echo "Creating working directory..."
+mkdir -p ${WORKING_DIR}
+chown -R ${USER_NAME}:${USER_GROUP} ${WORKING_DIR}

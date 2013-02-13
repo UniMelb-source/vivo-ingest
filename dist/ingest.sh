@@ -14,25 +14,27 @@ LATEST_DATE=$(cat ${FILE_LATEST})
 LATEST_TS=$(date -d ${LATEST_DATE} +%s)
 LATEST_TS=$((${LATEST_TS} + ${DAYSEC}))
 
+WORKING_DIR=/var/lib/rdr-unimelb/ingest
+
 while [ ${LATEST_TS} -lt ${NOW} ]
 do
 	CURRENT_DATE=$(date -d @${LATEST_TS} +%Y%m%d)
 
 	echo "Processing ${CURRENT_DATE}"
-	ADD_FILE=$(date -d @${LATEST_TS} +%Y%m%d)_ADD.ttl
+	ADD_FILE=${WORKING_DIR}/$(date -d @${LATEST_TS} +%Y%m%d)_ADD.ttl
 	ADD_URL=${URL_BASE}${ADD_FILE}
-	DEL_FILE=$(date -d @${LATEST_TS} +%Y%m%d)_DEL.ttl
+	DEL_FILE=${WORKING_DIR}/$(date -d @${LATEST_TS} +%Y%m%d)_DEL.ttl
 	DEL_URL=${URL_BASE}${DEL_FILE}
 	INGEST_ARGS="-action process -addFileName ${ADD_FILE} -removeFileName ${DEL_FILE} -jenaType ${DB_JENATYPE} -dbString ${DB_STRING} -userName ${DB_USERNAME} -password ${DB_PASSWORD} -localModelName ${DB_LOCAL_MODEL} -remoteModelName ${DB_REMOTE_MODEL}"
 	echo ${CURRENT_DATE} > ${FILE_LATEST}
 	LATEST_TS=$((${LATEST_TS} + ${DAYSEC}))
 
 	echo "Fetching add files"
-	wget -cnv ${ADD_URL}
+	wget -cnv ${ADD_URL} -O ${ADD_FILE}
 	ADD_RETURN=$?
 
 	echo "Fetching del file"
-	wget -cnv ${DEL_URL}
+	wget -cnv ${DEL_URL} -O ${DEL_FILE}
 	DEL_RETURN=$?
 
 	if [ ${ADD_RETURN} -gt 0 -a ${DEL_RETURN} -gt 0 ]
@@ -57,9 +59,9 @@ do
 
 	echo "Running ingest"
 	java ${JAVA_ARGS} -jar VivoIngest.jar ${INGEST_ARGS}
-	mv children.ttl ${CURRENT_DATE}-children.ttl
-	mv construct-add.ttl ${CURRENT_DATE}-construct-add.ttl
-	mv construct-remove.ttl ${CURRENT_DATE}-construct-remove.ttl
+	mv children.ttl ${WORKING_DIR}/${CURRENT_DATE}-children.ttl
+	mv construct-add.ttl ${WORKING_DIR}/${CURRENT_DATE}-construct-add.ttl
+	mv construct-remove.ttl ${WORKING_DIR}/${CURRENT_DATE}-construct-remove.ttl
 	echo "Ingest done"
 	bzip2 ${ADD_FILE}
 	bzip2 ${DEL_FILE}
