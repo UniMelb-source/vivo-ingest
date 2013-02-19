@@ -1,1 +1,1 @@
-0   1   *   *   0   %%USER_NAME%%    cd %%BIN_DIR%%; ./ingest.sh
+0   3   *   *   0   %%USER_NAME%%    cd %%BIN_DIR%%; ./ingest.sh
