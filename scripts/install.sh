@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CRON_DIR=/etc/cron.d
+LOGROTATE_DIR=/etc/logrotate.d
 USER_HOME=/var/lib/rdr-unimelb
 USER_NAME=rdr-unimelb
 USER_GROUP=rdr-unimelb
@@ -27,6 +28,9 @@ sed -i -e "s#%%USER_NAME%%#${USER_NAME}#g" -e "s#%%BIN_DIR%%#${BIN_DIR}#g" ${CRO
 echo "Creating log directory..."
 mkdir -p ${LOG_DIR}
 chown -R ${USER_NAME}:${USER_GROUP} ${LOG_DIR}
+
+echo "Installing logrotate..."
+cp scripts/logrotate ${LOGROTATE_DIR}/rdr-unimelb
 
 echo "Creating working directory..."
 mkdir -p ${WORKING_DIR}

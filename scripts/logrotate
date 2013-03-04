@@ -1,0 +1,8 @@
+/var/log/rdr-unimelb/ingest.log {
+  copytruncate
+  weekly
+  rotate 52
+  compress
+  missingok
+  create 640 rdr-unimelb rdr-unimelb
+}
