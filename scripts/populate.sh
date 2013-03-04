@@ -45,9 +45,9 @@ do
 		echo "Adding file"
 		clean_up_file ${ADD_ABS_FILE}
 		java ${JAVA_ARGS} -jar VivoIngest.jar ${POPULATE_ARGS}
-		cat construct-add.ttl >> ${CURRENT_DATE}-construct-add.ttl
+		cat construct-add.ttl >> ${WORKING_DIR}/${CURRENT_DATE}-construct-add.ttl
 		rm construct-add.ttl
-		cat construct-remove.ttl >> ${CURRENT_DATE}-construct-remove.ttl
+		cat construct-remove.ttl >> ${WORKING_DIR}/${CURRENT_DATE}-construct-remove.ttl
 		rm construct-remove.ttl
 		bzip2 ${ADD_ABS_FILE}
 	fi
